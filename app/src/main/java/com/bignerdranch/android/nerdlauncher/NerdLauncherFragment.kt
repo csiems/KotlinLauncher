@@ -1,6 +1,5 @@
 package com.bignerdranch.android.nerdlauncher
 
-
 import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.os.Bundle
@@ -45,18 +44,30 @@ class NerdLauncherFragment : Fragment() {
         }
 
         Log.i(TAG, "Found " + activities.size + " activities.")
-        mRecyclerView?.setAdapter(ActivityAdapter(activities))
+        mRecyclerView?.adapter = ActivityAdapter(activities)
     }
 
     //A class may be marked as inner to be able to access members of outer class
-    private inner class ActivityHolder (itemView: View): RecyclerView.ViewHolder(itemView) {
+    private inner class ActivityHolder (itemView: View): RecyclerView.ViewHolder(itemView),
+            View.OnClickListener {
         val mNameTextView = itemView as TextView
+        var mResolveInfo : ResolveInfo? = null
 
         fun bindActivity(resolveInfo: ResolveInfo)  {
-            val mResolveInfo = resolveInfo
+            mResolveInfo = resolveInfo
             val pm = activity.packageManager
-            val appName = mResolveInfo.loadLabel(pm).toString()
-            mNameTextView.setText(appName)
+            val appName = (mResolveInfo as ResolveInfo).loadLabel(pm).toString()  //this is weird
+            mNameTextView.text = appName
+            mNameTextView.setOnClickListener(this)
+        }
+
+        override fun onClick(v: View?) {
+            val activityInfo = mResolveInfo?.activityInfo
+            val i = Intent(Intent.ACTION_MAIN)
+                    .setClassName(activityInfo?.applicationInfo?.packageName,
+                            activityInfo?.name)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(i)
         }
     }
 
@@ -70,7 +81,7 @@ class NerdLauncherFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: ActivityHolder?, position: Int) {
-            val resolveInfo = mActivities.get(position)
+            val resolveInfo = mActivities[position]
             holder?.bindActivity(resolveInfo)
         }
 
@@ -78,7 +89,6 @@ class NerdLauncherFragment : Fragment() {
             return mActivities.size
         }
     }
-
 }
 
 
